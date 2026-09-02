@@ -3,19 +3,24 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
 import { OnboardingProvider, useOnboarding } from "../providers/OnboardingProvider";
+import { AuthProvider, useAuth } from "../providers/AuthProvider";
 
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
     <OnboardingProvider>
-      <RootNavigator />
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
     </OnboardingProvider>
   );
 }
 
 function RootNavigator() {
-  const { hasCompletedOnboarding, isHydrated } = useOnboarding();
+  const { hasCompletedOnboarding, isHydrated: isOnboardingHydrated } = useOnboarding();
+  const { isAuthenticated, isHydrated: isAuthHydrated } = useAuth();
+  const isHydrated = isOnboardingHydrated && isAuthHydrated;
 
   useEffect(() => {
     if (isHydrated) {
@@ -32,7 +37,10 @@ function RootNavigator() {
       <Stack.Protected guard={!hasCompletedOnboarding}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
-      <Stack.Protected guard={hasCompletedOnboarding}>
+      <Stack.Protected guard={hasCompletedOnboarding && !isAuthenticated}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={hasCompletedOnboarding && isAuthenticated}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

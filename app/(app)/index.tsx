@@ -1,14 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import { useAppLabels } from "../../hooks/useAppLabels";
 import { useOnboarding } from "../../providers/OnboardingProvider";
+import { useAuth } from "../../providers/AuthProvider";
 import { formatLiters } from "../../screens/onboarding/utils";
 import { COLORS } from "../../constants/theme";
 
 export default function HomeRoute() {
   const { copy, language } = useAppLabels();
   const { draft } = useOnboarding();
+  const { logout, user } = useAuth();
   const formattedTarget = formatLiters(
     draft.manualTarget,
     language,
@@ -29,6 +31,12 @@ export default function HomeRoute() {
           <Text style={styles.targetLabel}>{copy.home.dailyTarget}</Text>
           <Text style={styles.targetValue}>{formattedTarget}</Text>
         </View>
+        {user && (
+          <Text style={styles.account}>{copy.home.signedInAs(user.email)}</Text>
+        )}
+        <Pressable accessibilityRole="button" onPress={() => void logout()}>
+          <Text style={styles.logout}>{copy.auth.logout}</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -102,5 +110,18 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: -1.2,
     marginTop: 8,
+  },
+  account: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginTop: 18,
+    textAlign: "center",
+  },
+  logout: {
+    color: COLORS.blueDark,
+    fontSize: 13,
+    fontWeight: "800",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
   },
 });

@@ -61,11 +61,37 @@ export type LabelSet = {
     goals: string;
     chosenGoals: (count: number) => string;
   };
+  auth: {
+    eyebrow: string;
+    registerTitle: string;
+    registerDescription: string;
+    loginTitle: string;
+    loginDescription: string;
+    email: string;
+    emailPlaceholder: string;
+    password: string;
+    passwordPlaceholder: string;
+    passwordHint: string;
+    createAccount: string;
+    login: string;
+    logout: string;
+    haveAccount: string;
+    needAccount: string;
+    errors: {
+      invalidEmail: string;
+      shortPassword: string;
+      registerFailed: string;
+      accountInUse: string;
+      loginFailed: string;
+      serverUnavailable: string;
+    };
+  };
   home: {
     eyebrow: string;
     title: string;
     description: string;
     dailyTarget: string;
+    signedInAs: (email: string) => string;
   };
   actions: {
     continue: string;
@@ -138,11 +164,37 @@ export const labels: Record<AppLanguage, LabelSet> = {
       goals: "OBJETIVOS",
       chosenGoals: (count) => `${count} ${count === 1 ? "escolhido" : "escolhidos"}`,
     },
+    auth: {
+      eyebrow: "SUA CONTA",
+      registerTitle: "Salve seu progresso",
+      registerDescription: "Crie sua conta para manter sua meta segura e acessar seus dados em outros dispositivos.",
+      loginTitle: "Que bom ter você de volta",
+      loginDescription: "Entre para recuperar sua meta e continuar de onde parou.",
+      email: "E-mail",
+      emailPlaceholder: "voce@exemplo.com",
+      password: "Senha",
+      passwordPlaceholder: "Digite sua senha",
+      passwordHint: "Use pelo menos 8 caracteres.",
+      createAccount: "Criar minha conta",
+      login: "Entrar",
+      logout: "Sair da conta",
+      haveAccount: "Já tem uma conta?",
+      needAccount: "Ainda não tem uma conta?",
+      errors: {
+        invalidEmail: "Digite um e-mail válido.",
+        shortPassword: "A senha precisa ter pelo menos 8 caracteres.",
+        registerFailed: "Não foi possível criar sua conta. Confira os dados informados.",
+        accountInUse: "Este e-mail já está em uso. Entre ou utilize outro e-mail.",
+        loginFailed: "E-mail ou senha incorretos.",
+        serverUnavailable: "Não foi possível falar com o servidor. Tente novamente em instantes.",
+      },
+    },
     home: {
       eyebrow: "META CONFIGURADA",
       title: "Vamos começar a hidratar?",
       description: "Seu espaço diário está pronto. Em breve, você poderá registrar seu primeiro copo por aqui.",
       dailyTarget: "SUA META DIÁRIA",
+      signedInAs: (email) => `Conta: ${email}`,
     },
     actions: {
       continue: "Continuar",
@@ -213,11 +265,37 @@ export const labels: Record<AppLanguage, LabelSet> = {
       goals: "GOALS",
       chosenGoals: (count) => `${count} selected`,
     },
+    auth: {
+      eyebrow: "YOUR ACCOUNT",
+      registerTitle: "Save your progress",
+      registerDescription: "Create an account to keep your goal safe and access your data on other devices.",
+      loginTitle: "Welcome back",
+      loginDescription: "Sign in to restore your goal and continue where you left off.",
+      email: "Email",
+      emailPlaceholder: "you@example.com",
+      password: "Password",
+      passwordPlaceholder: "Enter your password",
+      passwordHint: "Use at least 8 characters.",
+      createAccount: "Create my account",
+      login: "Sign in",
+      logout: "Sign out",
+      haveAccount: "Already have an account?",
+      needAccount: "Don’t have an account yet?",
+      errors: {
+        invalidEmail: "Enter a valid email address.",
+        shortPassword: "Your password must have at least 8 characters.",
+        registerFailed: "We couldn’t create your account. Check the details provided.",
+        accountInUse: "This email is already in use. Sign in or use another email.",
+        loginFailed: "Incorrect email or password.",
+        serverUnavailable: "We couldn’t reach the server. Please try again shortly.",
+      },
+    },
     home: {
       eyebrow: "GOAL SET",
       title: "Ready to start hydrating?",
       description: "Your daily space is ready. Soon, you’ll be able to log your first glass here.",
       dailyTarget: "YOUR DAILY GOAL",
+      signedInAs: (email) => `Account: ${email}`,
     },
     actions: {
       continue: "Continue",

@@ -1,5 +1,15 @@
 # Welcome to your Expo app 👋
 
+## Waterly local account flow
+
+Start the API from the repository's `backend/` directory before running the app. The default API URL is
+`http://localhost:5004` on iOS/web and `http://10.0.2.2:5004` on the Android emulator. For a physical
+device, copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_URL` to the development machine's
+LAN address.
+
+Native sessions are stored with Expo SecureStore. The web build uses `sessionStorage`, so browser tokens
+are cleared when the browser session ends.
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started

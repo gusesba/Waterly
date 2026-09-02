@@ -32,6 +32,10 @@ type OnboardingContextValue = {
   prepareRecommendedTarget: () => void;
   profileComplete: boolean;
   recommendedTarget: number;
+  restoreOnboardingFromServer: (
+    profile: { age: number; goals: GoalId[]; heightCm: number; weightKg: number },
+    dailyTargetMl: number,
+  ) => Promise<void>;
   setAge: (value: string) => void;
   setHeight: (value: string) => void;
   setTargetInput: (value: string) => void;
@@ -137,6 +141,24 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     setHasCompletedOnboarding(true);
   }
 
+  async function restoreOnboardingFromServer(
+    profile: { age: number; goals: GoalId[]; heightCm: number; weightKg: number },
+    dailyTargetMl: number,
+  ) {
+    const restoredDraft: OnboardingDraft = {
+      age: String(profile.age),
+      height: String(profile.heightCm),
+      manualTarget: dailyTargetMl,
+      selectedGoals: profile.goals,
+      targetInput: String(dailyTargetMl),
+      weight: String(profile.weightKg),
+    };
+
+    await saveCompletedOnboarding(restoredDraft);
+    setDraft(restoredDraft);
+    setHasCompletedOnboarding(true);
+  }
+
   const value: OnboardingContextValue = {
     adjustTarget,
     commitTarget,
@@ -147,6 +169,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     prepareRecommendedTarget,
     profileComplete,
     recommendedTarget,
+    restoreOnboardingFromServer,
     setAge: (age) => updateDraft({ age }),
     setHeight: (height) => updateDraft({ height }),
     setTargetInput: (targetInput) => updateDraft({ targetInput }),
