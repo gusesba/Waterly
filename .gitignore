@@ -1,5 +1,3 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
@@ -25,18 +23,33 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+pnpm-debug.log*
+*.log
 
-# macOS
+# environment files (keep the documented example)
+.env
+.env.*
+!.env.example
+
+# editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
 .DS_Store
+Thumbs.db
 *.pem
-
-# local env files
-.env*.local
 
 # typescript
 *.tsbuildinfo
 
-app-example
+# generated example app
+app-example/
+
+# tests and tooling caches
+coverage/
+.eslintcache
+.cache/
+.turbo/
 
 # generated native folders
 /ios
