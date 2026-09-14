@@ -1,7 +1,11 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 import { GoalId } from "../constants/labels";
-import { loadOnboarding, saveCompletedOnboarding } from "../services/onboardingStorage";
+import {
+  loadOnboarding,
+  markAccountPromptCompleted,
+  saveCompletedOnboarding,
+} from "../services/onboardingStorage";
 import { roundToFifty } from "../screens/onboarding/utils";
 
 export type OnboardingDraft = {
@@ -25,8 +29,10 @@ const initialDraft: OnboardingDraft = {
 type OnboardingContextValue = {
   adjustTarget: (amount: number) => void;
   commitTarget: () => void;
+  completeAccountPrompt: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   draft: OnboardingDraft;
+  hasCompletedAccountPrompt: boolean;
   hasCompletedOnboarding: boolean;
   isHydrated: boolean;
   prepareRecommendedTarget: () => void;
@@ -52,6 +58,7 @@ type OnboardingProviderProps = {
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [draft, setDraft] = useState(initialDraft);
+  const [hasCompletedAccountPrompt, setHasCompletedAccountPrompt] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -67,6 +74,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
       if (saved) {
         setDraft({ ...initialDraft, ...saved.draft });
+        setHasCompletedAccountPrompt(saved.accountPromptCompleted);
         setHasCompletedOnboarding(saved.completed);
       }
 
@@ -136,9 +144,15 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       targetInput: String(normalized),
     };
 
-    await saveCompletedOnboarding(completedDraft);
+    await saveCompletedOnboarding(completedDraft, false);
     setDraft(completedDraft);
+    setHasCompletedAccountPrompt(false);
     setHasCompletedOnboarding(true);
+  }
+
+  async function completeAccountPrompt() {
+    await markAccountPromptCompleted();
+    setHasCompletedAccountPrompt(true);
   }
 
   async function restoreOnboardingFromServer(
@@ -154,16 +168,19 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       weight: String(profile.weightKg),
     };
 
-    await saveCompletedOnboarding(restoredDraft);
+    await saveCompletedOnboarding(restoredDraft, true);
     setDraft(restoredDraft);
+    setHasCompletedAccountPrompt(true);
     setHasCompletedOnboarding(true);
   }
 
   const value: OnboardingContextValue = {
     adjustTarget,
     commitTarget,
+    completeAccountPrompt,
     completeOnboarding,
     draft,
+    hasCompletedAccountPrompt,
     hasCompletedOnboarding,
     isHydrated,
     prepareRecommendedTarget,

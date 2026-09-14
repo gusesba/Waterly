@@ -1,20 +1,20 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 
 import { OnboardingPage } from "../../components/onboarding/OnboardingPage";
 import { useAppLabels } from "../../hooks/useAppLabels";
 import { AuthMode, useAuth } from "../../providers/AuthProvider";
-import { useOnboarding } from "../../providers/OnboardingProvider";
 import { AuthScreen } from "../../screens/auth/AuthScreen";
 
-export default function AuthRoute() {
+export default function AccountRoute() {
   const { copy } = useAppLabels();
   const { authenticate } = useAuth();
-  const { completeAccountPrompt } = useOnboarding();
-  const [mode, setMode] = useState<AuthMode>("login");
+  const router = useRouter();
+  const [mode, setMode] = useState<AuthMode>("register");
 
   async function submit(email: string, password: string) {
     await authenticate(mode, email, password);
-    await completeAccountPrompt();
+    router.replace("/");
   }
 
   return (
@@ -22,7 +22,7 @@ export default function AuthRoute() {
       <AuthScreen
         copy={copy}
         mode={mode}
-        onContinueWithoutAccount={() => void completeAccountPrompt()}
+        onContinueWithoutAccount={() => router.back()}
         onModeChange={setMode}
         onSubmit={submit}
       />

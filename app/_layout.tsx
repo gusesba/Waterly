@@ -4,22 +4,29 @@ import { useEffect } from "react";
 
 import { OnboardingProvider, useOnboarding } from "../providers/OnboardingProvider";
 import { AuthProvider, useAuth } from "../providers/AuthProvider";
+import { QueryProvider } from "../providers/QueryProvider";
 
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <OnboardingProvider>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </OnboardingProvider>
+    <QueryProvider>
+      <OnboardingProvider>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </OnboardingProvider>
+    </QueryProvider>
   );
 }
 
 function RootNavigator() {
-  const { hasCompletedOnboarding, isHydrated: isOnboardingHydrated } = useOnboarding();
-  const { isAuthenticated, isHydrated: isAuthHydrated } = useAuth();
+  const {
+    hasCompletedAccountPrompt,
+    hasCompletedOnboarding,
+    isHydrated: isOnboardingHydrated,
+  } = useOnboarding();
+  const { isHydrated: isAuthHydrated, user } = useAuth();
   const isHydrated = isOnboardingHydrated && isAuthHydrated;
 
   useEffect(() => {
@@ -37,10 +44,14 @@ function RootNavigator() {
       <Stack.Protected guard={!hasCompletedOnboarding}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
-      <Stack.Protected guard={hasCompletedOnboarding && !isAuthenticated}>
+      <Stack.Protected
+        guard={hasCompletedOnboarding && !hasCompletedAccountPrompt && !user}
+      >
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
-      <Stack.Protected guard={hasCompletedOnboarding && isAuthenticated}>
+      <Stack.Protected
+        guard={hasCompletedOnboarding && (hasCompletedAccountPrompt || !!user)}
+      >
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

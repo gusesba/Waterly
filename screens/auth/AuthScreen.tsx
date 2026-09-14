@@ -17,11 +17,18 @@ import { ApiError } from "../../services/api";
 type AuthScreenProps = {
   copy: LabelSet;
   mode: AuthMode;
+  onContinueWithoutAccount: () => void;
   onModeChange: (mode: AuthMode) => void;
   onSubmit: (email: string, password: string) => Promise<void>;
 };
 
-export function AuthScreen({ copy, mode, onModeChange, onSubmit }: AuthScreenProps) {
+export function AuthScreen({
+  copy,
+  mode,
+  onContinueWithoutAccount,
+  onModeChange,
+  onSubmit,
+}: AuthScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +149,15 @@ export function AuthScreen({ copy, mode, onModeChange, onSubmit }: AuthScreenPro
           <Text style={styles.switchLink}>
             {isRegister ? copy.auth.login : copy.auth.createAccount}
           </Text>
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onContinueWithoutAccount}
+        style={styles.continueWithoutAccountButton}
+      >
+        <Text style={styles.continueWithoutAccountText}>
+          {copy.auth.continueWithoutAccount}
         </Text>
       </Pressable>
     </View>
@@ -300,5 +316,15 @@ const styles = StyleSheet.create({
   switchLink: {
     color: COLORS.blueDark,
     fontWeight: "800",
+  },
+  continueWithoutAccountButton: {
+    paddingBottom: 8,
+    paddingVertical: 14,
+  },
+  continueWithoutAccountText: {
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
   },
 });

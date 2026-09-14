@@ -73,6 +73,7 @@ export type LabelSet = {
     passwordPlaceholder: string;
     passwordHint: string;
     createAccount: string;
+    continueWithoutAccount: string;
     login: string;
     logout: string;
     haveAccount: string;
@@ -91,6 +92,15 @@ export type LabelSet = {
     title: string;
     description: string;
     dailyTarget: string;
+    consumed: string;
+    quickAdd: string;
+    addAmount: (value: string) => string;
+    accountRequiredTitle: string;
+    accountRequiredDescription: string;
+    loading: string;
+    loadError: string;
+    addError: string;
+    retry: string;
     signedInAs: (email: string) => string;
   };
   actions: {
@@ -176,6 +186,7 @@ export const labels: Record<AppLanguage, LabelSet> = {
       passwordPlaceholder: "Digite sua senha",
       passwordHint: "Use pelo menos 8 caracteres.",
       createAccount: "Criar minha conta",
+      continueWithoutAccount: "Continuar sem login",
       login: "Entrar",
       logout: "Sair da conta",
       haveAccount: "Já tem uma conta?",
@@ -190,10 +201,19 @@ export const labels: Record<AppLanguage, LabelSet> = {
       },
     },
     home: {
-      eyebrow: "META CONFIGURADA",
-      title: "Vamos começar a hidratar?",
-      description: "Seu espaço diário está pronto. Em breve, você poderá registrar seu primeiro copo por aqui.",
+      eyebrow: "HOJE",
+      title: "Sua hidratação",
+      description: "Cada copo conta para completar sua meta do dia.",
       dailyTarget: "SUA META DIÁRIA",
+      consumed: "CONSUMIDO",
+      quickAdd: "REGISTRO RÁPIDO",
+      addAmount: (value) => `Adicionar ${value}`,
+      accountRequiredTitle: "Salve seu primeiro copo",
+      accountRequiredDescription: "Crie uma conta para registrar e manter sua hidratação sincronizada.",
+      loading: "Carregando sua hidratação...",
+      loadError: "Não foi possível carregar sua hidratação.",
+      addError: "Não foi possível registrar este copo. Tente novamente.",
+      retry: "Tentar novamente",
       signedInAs: (email) => `Conta: ${email}`,
     },
     actions: {
@@ -277,6 +297,7 @@ export const labels: Record<AppLanguage, LabelSet> = {
       passwordPlaceholder: "Enter your password",
       passwordHint: "Use at least 8 characters.",
       createAccount: "Create my account",
+      continueWithoutAccount: "Continue without signing in",
       login: "Sign in",
       logout: "Sign out",
       haveAccount: "Already have an account?",
@@ -291,10 +312,19 @@ export const labels: Record<AppLanguage, LabelSet> = {
       },
     },
     home: {
-      eyebrow: "GOAL SET",
-      title: "Ready to start hydrating?",
-      description: "Your daily space is ready. Soon, you’ll be able to log your first glass here.",
+      eyebrow: "TODAY",
+      title: "Your hydration",
+      description: "Every glass counts toward completing today’s goal.",
       dailyTarget: "YOUR DAILY GOAL",
+      consumed: "CONSUMED",
+      quickAdd: "QUICK ADD",
+      addAmount: (value) => `Add ${value}`,
+      accountRequiredTitle: "Save your first glass",
+      accountRequiredDescription: "Create an account to log and keep your hydration in sync.",
+      loading: "Loading your hydration...",
+      loadError: "We couldn’t load your hydration.",
+      addError: "We couldn’t log this glass. Please try again.",
+      retry: "Try again",
       signedInAs: (email) => `Account: ${email}`,
     },
     actions: {

@@ -1,8 +1,10 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useAppLabels } from "../hooks/useAppLabels";
 import {
   ApiError,
+  apiRequest,
   CurrentUser,
   getCurrentUser,
   loginAccount,
@@ -18,15 +20,16 @@ export type AuthMode = "login" | "register";
 
 type AuthContextValue = {
   authenticate: (mode: AuthMode, email: string, password: string) => Promise<void>;
-  isAuthenticated: boolean;
   isHydrated: boolean;
   logout: () => Promise<void>;
+  request: <T>(path: string, init?: RequestInit) => Promise<T>;
   user: CurrentUser | null;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const { language } = useAppLabels();
   const {
     draft,
@@ -35,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreOnboardingFromServer,
   } = useOnboarding();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [session, setSession] = useState<SessionTokens | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -52,10 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const validSession = await ensureFreshSession(storedSession);
-        const currentUser = await loadAndReconcileUser(validSession);
+        const restored = await loadAndReconcileUser(validSession);
 
         if (isMounted) {
-          setUser(currentUser);
+          setSession(restored.session);
+          setUser(restored.user);
         }
       } catch (error) {
         if (error instanceof ApiError && (error.status === 400 || error.status === 401)) {
@@ -93,14 +98,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const newSession = await loginAccount(email, password);
     await saveSession(newSession);
-    const currentUser = await loadAndReconcileUser(newSession);
+    const authenticated = await loadAndReconcileUser(newSession);
 
-    setUser(currentUser);
+    queryClient.clear();
+    setSession(authenticated.session);
+    setUser(authenticated.user);
   }
 
   async function logout() {
     await clearSession();
+    queryClient.clear();
+    setSession(null);
     setUser(null);
+  }
+
+  async function authorizedRequest<T>(path: string, init: RequestInit = {}) {
+    if (!session) {
+      throw new ApiError(401);
+    }
+
+    try {
+      return await apiRequest<T>(path, init, session.accessToken, language);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) {
+        throw error;
+      }
+
+      const refreshedSession = await refreshSession(session.refreshToken);
+      await saveSession(refreshedSession);
+      setSession(refreshedSession);
+      return apiRequest<T>(path, init, refreshedSession.accessToken, language);
+    }
   }
 
   async function ensureFreshSession(currentSession: SessionTokens) {
@@ -131,11 +159,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (currentUser.hasCompletedOnboarding && currentUser.profile && currentUser.hydrationGoal) {
       await restoreOnboardingFromServer(currentUser.profile, currentUser.hydrationGoal.dailyTargetMl);
-      return currentUser;
+      return { session: activeSession, user: currentUser };
     }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-    return syncOnboarding(activeSession.accessToken, language, {
+    const syncedUser = await syncOnboarding(activeSession.accessToken, language, {
       age: Number(draft.age),
       dailyTargetMl: draft.manualTarget,
       goals: draft.selectedGoals,
@@ -143,13 +171,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       timeZone,
       weightKg: Number(draft.weight),
     });
+
+    return { session: activeSession, user: syncedUser };
   }
 
   const value: AuthContextValue = {
     authenticate,
-    isAuthenticated: user?.hasCompletedOnboarding === true,
     isHydrated,
     logout,
+    request: authorizedRequest,
     user,
   };
 

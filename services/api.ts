@@ -102,7 +102,7 @@ export function syncOnboarding(
   );
 }
 
-async function request<T = void>(
+export async function apiRequest<T = void>(
   path: string,
   init: RequestInit,
   accessToken?: string,
@@ -135,6 +135,8 @@ async function request<T = void>(
     clearTimeout(timeout);
   }
 }
+
+const request = apiRequest;
 
 async function readBody(response: Response) {
   const text = await response.text();
