@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { OnboardingProvider, useOnboarding } from "../providers/OnboardingProvider";
 import { AuthProvider, useAuth } from "../providers/AuthProvider";
 import { QueryProvider } from "../providers/QueryProvider";
+import { HydrationSyncProvider } from "../providers/HydrationSyncProvider";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -13,7 +14,9 @@ export default function RootLayout() {
     <QueryProvider>
       <OnboardingProvider>
         <AuthProvider>
-          <RootNavigator />
+          <HydrationSyncProvider>
+            <RootNavigator />
+          </HydrationSyncProvider>
         </AuthProvider>
       </OnboardingProvider>
     </QueryProvider>

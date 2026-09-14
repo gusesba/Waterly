@@ -94,6 +94,30 @@ export type LabelSet = {
     dailyTarget: string;
     consumed: string;
     quickAdd: string;
+    quickAddFor: (beverage: string) => string;
+    customAmount: string;
+    customPlaceholder: string;
+    addCustom: string;
+    todayEntries: string;
+    noEntries: string;
+    edit: string;
+    save: string;
+    cancel: string;
+    remove: string;
+    history: string;
+    historyTitle: string;
+    historyDescription: string;
+    noHistory: string;
+    changeError: string;
+    offline: string;
+    pendingSync: (count: number) => string;
+    syncing: string;
+    retrySync: string;
+    beverage: string;
+    beverageNames: Record<string, string>;
+    waterPercentage: (value: number) => string;
+    waterEquivalent: (value: string) => string;
+    waterEquivalentShort: (value: string) => string;
     addAmount: (value: string) => string;
     accountRequiredTitle: string;
     accountRequiredDescription: string;
@@ -207,6 +231,35 @@ export const labels: Record<AppLanguage, LabelSet> = {
       dailyTarget: "SUA META DIÁRIA",
       consumed: "CONSUMIDO",
       quickAdd: "REGISTRO RÁPIDO",
+      quickAddFor: (beverage) => `REGISTRO RÁPIDO · ${beverage.toUpperCase()}`,
+      customAmount: "OUTRA QUANTIDADE",
+      customPlaceholder: "Quantidade em ml",
+      addCustom: "Adicionar",
+      todayEntries: "REGISTROS DE HOJE",
+      noEntries: "Nenhum copo registrado ainda.",
+      edit: "Editar",
+      save: "Salvar",
+      cancel: "Cancelar",
+      remove: "Excluir",
+      history: "Ver histórico",
+      historyTitle: "Seu histórico",
+      historyDescription: "Os últimos dias da sua jornada de hidratação.",
+      noHistory: "Ainda não há histórico disponível.",
+      changeError: "Não foi possível alterar este registro.",
+      offline: "Sem conexão",
+      pendingSync: (count) => `${count} ${count === 1 ? "registro aguardando" : "registros aguardando"} sincronização`,
+      syncing: "Sincronizando...",
+      retrySync: "Tentar sincronizar",
+      beverage: "BEBIDA",
+      beverageNames: {
+        water: "Água",
+        "sparkling-water": "Água com gás",
+        coffee: "Café",
+        tea: "Chá",
+      },
+      waterPercentage: (value) => `${value}% de água`,
+      waterEquivalent: (value) => `Equivale a ${value} de água`,
+      waterEquivalentShort: (value) => `≈ ${value} de água`,
       addAmount: (value) => `Adicionar ${value}`,
       accountRequiredTitle: "Salve seu primeiro copo",
       accountRequiredDescription: "Crie uma conta para registrar e manter sua hidratação sincronizada.",
@@ -318,6 +371,35 @@ export const labels: Record<AppLanguage, LabelSet> = {
       dailyTarget: "YOUR DAILY GOAL",
       consumed: "CONSUMED",
       quickAdd: "QUICK ADD",
+      quickAddFor: (beverage) => `QUICK ADD · ${beverage.toUpperCase()}`,
+      customAmount: "CUSTOM AMOUNT",
+      customPlaceholder: "Amount in ml",
+      addCustom: "Add",
+      todayEntries: "TODAY'S ENTRIES",
+      noEntries: "No glasses logged yet.",
+      edit: "Edit",
+      save: "Save",
+      cancel: "Cancel",
+      remove: "Delete",
+      history: "View history",
+      historyTitle: "Your history",
+      historyDescription: "The latest days in your hydration journey.",
+      noHistory: "No history is available yet.",
+      changeError: "We couldn’t change this entry.",
+      offline: "Offline",
+      pendingSync: (count) => `${count} ${count === 1 ? "entry" : "entries"} waiting to sync`,
+      syncing: "Syncing...",
+      retrySync: "Retry sync",
+      beverage: "BEVERAGE",
+      beverageNames: {
+        water: "Water",
+        "sparkling-water": "Sparkling water",
+        coffee: "Coffee",
+        tea: "Tea",
+      },
+      waterPercentage: (value) => `${value}% water`,
+      waterEquivalent: (value) => `Equivalent to ${value} of water`,
+      waterEquivalentShort: (value) => `≈ ${value} water`,
       addAmount: (value) => `Add ${value}`,
       accountRequiredTitle: "Save your first glass",
       accountRequiredDescription: "Create an account to log and keep your hydration in sync.",

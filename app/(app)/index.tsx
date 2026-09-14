@@ -9,55 +9,72 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import { useEffect, useState } from "react";
 
 import { COLORS } from "../../constants/theme";
 import { useAppLabels } from "../../hooks/useAppLabels";
 import { useAuth } from "../../providers/AuthProvider";
+import { useHydrationSync } from "../../providers/HydrationSyncProvider";
 import { formatLiters } from "../../screens/onboarding/utils";
-
-type DrinkEntry = {
-  id: string;
-  clientEntryId: string;
-  volumeMl: number;
-  occurredAt: string;
-  timeZone: string;
-  source: string;
-};
-
-type TodayHydration = {
-  date: string;
-  dailyTargetMl: number;
-  consumedMl: number;
-  progress: number;
-  entries: DrinkEntry[];
-};
-
-type AddEntryCommand = {
-  clientEntryId: string;
-  occurredAt: string;
-  timeZone: string;
-  volumeMl: number;
-};
+import { ApiError } from "../../services/api";
+import type {
+  AddEntryCommand,
+  Beverage,
+  QuickAddSuggestion,
+  TodayHydration,
+} from "../../services/hydration";
+import { loadHydrationSnapshot, saveHydrationSnapshot } from "../../services/hydrationSnapshot";
 
 type AddEntryContext = {
   previous?: TodayHydration;
 };
 
-const quickAmounts = [250, 350, 500];
-
 export default function HomeRoute() {
   const { copy, language } = useAppLabels();
   const { logout, request, user } = useAuth();
+  const { enqueue, isOnline, isSyncing, pendingCount, retry } = useHydrationSync();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const [amountInput, setAmountInput] = useState("");
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [selectedBeverage, setSelectedBeverage] = useState("water");
   const queryKey = ["hydration", "today", user?.email];
   const todayQuery = useQuery({
     enabled: !!user,
     queryFn: () => request<TodayHydration>("/api/v1/hydration/today"),
     queryKey,
   });
+  const beveragesQuery = useQuery({
+    enabled: !!user,
+    queryFn: () => request<Beverage[]>("/api/v1/hydration/beverages"),
+    queryKey: ["hydration", "beverages"],
+    staleTime: 5 * 60_000,
+  });
+  const suggestionsQuery = useQuery({
+    enabled: !!user,
+    queryFn: () => request<QuickAddSuggestion[]>(
+      `/api/v1/hydration/suggestions?beverageCode=${encodeURIComponent(selectedBeverage)}`,
+    ),
+    queryKey: ["hydration", "suggestions", user?.email, selectedBeverage],
+  });
+  useEffect(() => {
+    if (!user) return;
+    void loadHydrationSnapshot(user.email).then((snapshot) => {
+      const snapshotQueryKey = ["hydration", "today", user.email];
+      if (snapshot && !queryClient.getQueryData(snapshotQueryKey)) {
+        queryClient.setQueryData(snapshotQueryKey, snapshot);
+      }
+    });
+  }, [queryClient, user]);
+
+  useEffect(() => {
+    if (user && todayQuery.data) {
+      void saveHydrationSnapshot(user.email, todayQuery.data);
+    }
+  }, [todayQuery.data, user]);
   const addEntry = useMutation<TodayHydration, Error, AddEntryCommand, AddEntryContext>({
     mutationFn: (command: AddEntryCommand) => request<TodayHydration>(
       "/api/v1/hydration/entries",
@@ -66,7 +83,11 @@ export default function HomeRoute() {
         method: "POST",
       },
     ),
-    onError: (_error, _command, context) => {
+    onError: async (error, command, context) => {
+      if (isRetryable(error)) {
+        await enqueue({ id: command.clientEntryId, payload: command, type: "create" });
+        return;
+      }
       if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous);
       }
@@ -76,12 +97,17 @@ export default function HomeRoute() {
       const previous = queryClient.getQueryData<TodayHydration>(queryKey);
 
       if (previous) {
-        const consumedMl = previous.consumedMl + command.volumeMl;
+        const factor = beveragesQuery.data?.find(
+          (beverage) => beverage.code === command.beverageCode,
+        )?.hydrationFactor ?? 1;
+        const hydrationMl = Math.round(command.volumeMl * factor);
+        const consumedMl = previous.consumedMl + hydrationMl;
         queryClient.setQueryData<TodayHydration>(queryKey, {
           ...previous,
           consumedMl,
           entries: [{
             ...command,
+            hydrationMl,
             id: command.clientEntryId,
             source: "manual",
           }, ...previous.entries],
@@ -93,16 +119,130 @@ export default function HomeRoute() {
     },
     onSuccess: (hydration) => {
       queryClient.setQueryData(queryKey, hydration);
+      void queryClient.invalidateQueries({ queryKey: ["hydration", "history"] });
+      void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
+      void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
+    },
+  });
+  const changeEntry = useMutation<
+    TodayHydration,
+    Error,
+    {
+      beverageCode?: string;
+      entryId: string;
+      id: string;
+      method: "DELETE" | "PATCH";
+      volumeMl?: number;
+    },
+    AddEntryContext
+  >({
+    mutationFn: ({ beverageCode, entryId, id, method, volumeMl }) => request<TodayHydration>(
+      `/api/v1/hydration/entries/${entryId}${
+        method === "DELETE" ? `?clientOperationId=${id}` : ""
+      }`,
+      {
+        body: method === "PATCH"
+          ? JSON.stringify({ beverageCode, clientOperationId: id, volumeMl })
+          : undefined,
+        method,
+      },
+    ),
+    onMutate: async (operation) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<TodayHydration>(queryKey);
+      if (!previous) return { previous };
+      const currentEntry = previous.entries.find((entry) => entry.id === operation.entryId);
+      if (!currentEntry) return { previous };
+
+      if (operation.method === "DELETE") {
+        const consumedMl = previous.consumedMl - currentEntry.hydrationMl;
+        queryClient.setQueryData<TodayHydration>(queryKey, {
+          ...previous,
+          consumedMl,
+          entries: previous.entries.filter((entry) => entry.id !== operation.entryId),
+          progress: Math.min(consumedMl / previous.dailyTargetMl, 1),
+        });
+      } else {
+        const factor = beveragesQuery.data?.find(
+          (beverage) => beverage.code === operation.beverageCode,
+        )?.hydrationFactor ?? 1;
+        const hydrationMl = Math.round((operation.volumeMl ?? 0) * factor);
+        const consumedMl = previous.consumedMl - currentEntry.hydrationMl + hydrationMl;
+        queryClient.setQueryData<TodayHydration>(queryKey, {
+          ...previous,
+          consumedMl,
+          entries: previous.entries.map((entry) => entry.id === operation.entryId
+            ? {
+                ...entry,
+                beverageCode: operation.beverageCode ?? entry.beverageCode,
+                hydrationMl,
+                volumeMl: operation.volumeMl ?? entry.volumeMl,
+              }
+            : entry),
+          progress: Math.min(consumedMl / previous.dailyTargetMl, 1),
+        });
+      }
+      return { previous };
+    },
+    onError: async (error, operation, context) => {
+      if (isRetryable(error)) {
+        await enqueue(operation.method === "PATCH"
+          ? {
+              entryId: operation.entryId,
+              id: operation.id,
+              payload: {
+                beverageCode: operation.beverageCode ?? "water",
+                volumeMl: operation.volumeMl ?? 0,
+              },
+              type: "update",
+            }
+          : { entryId: operation.entryId, id: operation.id, type: "delete" });
+        setAmountInput("");
+        setEditingEntryId(null);
+        return;
+      }
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+    },
+    onSuccess: (nextHydration) => {
+      queryClient.setQueryData(queryKey, nextHydration);
+      void queryClient.invalidateQueries({ queryKey: ["hydration", "history"] });
+      void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
+      void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
+      setAmountInput("");
+      setEditingEntryId(null);
     },
   });
 
-  function logWater(volumeMl: number) {
+  function logWater(volumeMl: number, beverageCode = selectedBeverage) {
     addEntry.mutate({
       clientEntryId: Crypto.randomUUID(),
       occurredAt: new Date().toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       volumeMl,
+      beverageCode,
     });
+  }
+
+  function submitAmount() {
+    const volumeMl = Number(amountInput);
+
+    if (!Number.isInteger(volumeMl) || volumeMl < 1 || volumeMl > 2000) {
+      return;
+    }
+
+    if (editingEntryId) {
+      changeEntry.mutate({
+        beverageCode: selectedBeverage,
+        entryId: editingEntryId,
+        id: Crypto.randomUUID(),
+        method: "PATCH",
+        volumeMl,
+      });
+      return;
+    }
+
+    logWater(volumeMl);
+    setAmountInput("");
   }
 
   if (!user) {
@@ -127,6 +267,19 @@ export default function HomeRoute() {
   }
 
   const hydration = todayQuery.data;
+  const defaultSuggestions = [
+    { beverageCode: selectedBeverage, volumeMl: 250 },
+    { beverageCode: selectedBeverage, volumeMl: 350 },
+    { beverageCode: selectedBeverage, volumeMl: 500 },
+  ];
+  const selectedSuggestions = suggestionsQuery.data?.filter(
+    (suggestion) => suggestion.beverageCode === selectedBeverage,
+  );
+  const suggestions = selectedSuggestions?.length === 3
+    ? selectedSuggestions
+    : defaultSuggestions;
+  const selectedBeverageName = copy.home.beverageNames[selectedBeverage]
+    ?? selectedBeverage;
   const progress = hydration?.progress ?? 0;
   const progressWidth = `${Math.round(progress * 100)}%` as `${number}%`;
 
@@ -137,12 +290,29 @@ export default function HomeRoute() {
         <Text style={styles.title}>{copy.home.title}</Text>
         <Text style={styles.description}>{copy.home.description}</Text>
 
+        {(!isOnline || pendingCount > 0 || isSyncing) && (
+          <View style={styles.syncStatus}>
+            <Text style={styles.syncText}>
+              {!isOnline
+                ? copy.home.offline
+                : isSyncing
+                  ? copy.home.syncing
+                  : copy.home.pendingSync(pendingCount)}
+            </Text>
+            {isOnline && pendingCount > 0 && !isSyncing && (
+              <Pressable accessibilityRole="button" onPress={() => void retry()}>
+                <Text style={styles.syncAction}>{copy.home.retrySync}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {todayQuery.isPending ? (
           <View style={styles.status}>
             <ActivityIndicator color={COLORS.blueDark} />
             <Text style={styles.statusText}>{copy.home.loading}</Text>
           </View>
-        ) : todayQuery.isError || !hydration ? (
+        ) : !hydration ? (
           <View style={styles.status}>
             <Text accessibilityRole="alert" style={styles.errorText}>
               {copy.home.loadError}
@@ -176,9 +346,48 @@ export default function HomeRoute() {
               </Text>
             </View>
 
-            <Text style={styles.sectionLabel}>{copy.home.quickAdd}</Text>
+            <Text style={styles.sectionLabel}>{copy.home.beverage}</Text>
+            <ScrollView
+              contentContainerStyle={styles.beverageRow}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {(beveragesQuery.data ?? []).map((beverage) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={beverage.code}
+                  onPress={() => setSelectedBeverage(beverage.code)}
+                  style={[
+                    styles.beverageButton,
+                    selectedBeverage === beverage.code && styles.beverageButtonSelected,
+                  ]}
+                >
+                  <Text style={[
+                    styles.beverageLabel,
+                    selectedBeverage === beverage.code && styles.beverageLabelSelected,
+                  ]}>
+                    {copy.home.beverageNames[beverage.code] ?? beverage.code}
+                  </Text>
+                  <Text style={[
+                    styles.beveragePercentage,
+                    selectedBeverage === beverage.code && styles.beverageLabelSelected,
+                  ]}>
+                    {copy.home.waterPercentage(Math.round(beverage.hydrationFactor * 100))}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.sectionLabel}>
+              {copy.home.quickAddFor(selectedBeverageName)}
+            </Text>
             <View style={styles.quickRow}>
-              {quickAmounts.map((amount) => {
+              {suggestions.map((suggestion) => {
+                const amount = suggestion.volumeMl;
+                const hydrationFactor = beveragesQuery.data?.find(
+                  (beverage) => beverage.code === suggestion.beverageCode,
+                )?.hydrationFactor ?? 1;
+                const equivalentWater = Math.round(amount * hydrationFactor);
                 const formattedAmount = formatAmount(
                   amount,
                   language,
@@ -191,8 +400,11 @@ export default function HomeRoute() {
                     accessibilityRole="button"
                     accessibilityState={{ disabled: addEntry.isPending }}
                     disabled={addEntry.isPending}
-                    key={amount}
-                    onPress={() => logWater(amount)}
+                    key={`${suggestion.beverageCode}-${amount}`}
+                    onPress={() => {
+                      setSelectedBeverage(suggestion.beverageCode);
+                      logWater(amount, suggestion.beverageCode);
+                    }}
                     style={({ pressed }) => [
                       styles.quickButton,
                       pressed && styles.pressed,
@@ -200,16 +412,127 @@ export default function HomeRoute() {
                     ]}
                   >
                     <Ionicons color={COLORS.blueDark} name="add" size={19} />
-                    <Text style={styles.quickLabel}>{formattedAmount}</Text>
+                    <View>
+                      <Text style={styles.quickLabel}>{formattedAmount}</Text>
+                      <Text style={styles.quickBeverage}>
+                        {copy.home.beverageNames[suggestion.beverageCode]
+                          ?? suggestion.beverageCode}
+                      </Text>
+                      {equivalentWater !== amount && (
+                        <Text style={styles.quickEquivalent}>
+                          {copy.home.waterEquivalentShort(formatAmount(
+                            equivalentWater,
+                            language,
+                            copy.target.milliliters,
+                          ))}
+                        </Text>
+                      )}
+                    </View>
                   </Pressable>
                 );
               })}
             </View>
-            {addEntry.isError && (
+            <Text style={styles.sectionLabel}>{copy.home.customAmount}</Text>
+            <View style={styles.customRow}>
+              <TextInput
+                accessibilityLabel={copy.home.customPlaceholder}
+                keyboardType="number-pad"
+                maxLength={4}
+                onChangeText={setAmountInput}
+                placeholder={copy.home.customPlaceholder}
+                placeholderTextColor={COLORS.muted}
+                style={styles.amountInput}
+                value={amountInput}
+              />
+              <Pressable
+                accessibilityRole="button"
+                disabled={!amountInput || addEntry.isPending || changeEntry.isPending}
+                onPress={submitAmount}
+                style={({ pressed }) => [styles.compactButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.compactButtonLabel}>
+                  {editingEntryId ? copy.home.save : copy.home.addCustom}
+                </Text>
+              </Pressable>
+              {editingEntryId && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setEditingEntryId(null);
+                    setAmountInput("");
+                  }}
+                >
+                  <Text style={styles.link}>{copy.home.cancel}</Text>
+                </Pressable>
+              )}
+            </View>
+            {addEntry.isError && pendingCount === 0 && (
               <Text accessibilityRole="alert" style={styles.errorText}>
                 {copy.home.addError}
               </Text>
             )}
+            {changeEntry.isError && pendingCount === 0 && (
+              <Text accessibilityRole="alert" style={styles.errorText}>
+                {copy.home.changeError}
+              </Text>
+            )}
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>{copy.home.todayEntries}</Text>
+              <Pressable accessibilityRole="button" onPress={() => router.push("./history")}>
+                <Text style={styles.link}>{copy.home.history}</Text>
+              </Pressable>
+            </View>
+            {hydration.entries.length === 0 ? (
+              <Text style={styles.emptyText}>{copy.home.noEntries}</Text>
+            ) : hydration.entries.map((entry) => (
+              <View key={entry.id} style={styles.entryRow}>
+                <View>
+                  <Text style={styles.entryAmount}>
+                    {formatAmount(entry.volumeMl, language, copy.target.milliliters)}
+                  </Text>
+                  <Text style={styles.entryTime}>
+                    {copy.home.beverageNames[entry.beverageCode] ?? entry.beverageCode} ·{" "}
+                    {new Date(entry.occurredAt).toLocaleTimeString(language, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                  {entry.hydrationMl !== entry.volumeMl && (
+                    <Text style={styles.entryEquivalent}>
+                      {copy.home.waterEquivalent(formatAmount(
+                        entry.hydrationMl,
+                        language,
+                        copy.target.milliliters,
+                      ))}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.entryActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setEditingEntryId(entry.id);
+                      setAmountInput(String(entry.volumeMl));
+                      setSelectedBeverage(entry.beverageCode);
+                    }}
+                  >
+                    <Text style={styles.link}>{copy.home.edit}</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={changeEntry.isPending}
+                    onPress={() => changeEntry.mutate({
+                      entryId: entry.id,
+                      id: Crypto.randomUUID(),
+                      method: "DELETE",
+                    })}
+                  >
+                    <Text style={styles.removeLink}>{copy.home.remove}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
           </>
         )}
 
@@ -226,6 +549,10 @@ export default function HomeRoute() {
 
 function formatAmount(value: number, locale: string, unit: string) {
   return `${value.toLocaleString(locale)} ${unit}`;
+}
+
+function isRetryable(error: Error) {
+  return !(error instanceof ApiError) || error.status === 429 || error.status >= 500;
 }
 
 const styles = StyleSheet.create({
@@ -275,6 +602,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 10,
     textAlign: "center",
+  },
+  syncStatus: {
+    alignItems: "center",
+    backgroundColor: COLORS.blueSoft,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  syncText: {
+    color: COLORS.blueDark,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  syncAction: {
+    color: COLORS.blueDark,
+    fontSize: 12,
+    fontWeight: "900",
+    padding: 6,
   },
   progressCard: {
     backgroundColor: COLORS.surface,
@@ -342,6 +690,35 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 13,
   },
+  beverageRow: {
+    gap: 8,
+    paddingTop: 13,
+  },
+  beverageButton: {
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  beverageButtonSelected: {
+    backgroundColor: COLORS.blueDark,
+    borderColor: COLORS.blueDark,
+  },
+  beverageLabel: {
+    color: COLORS.blueDark,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  beverageLabelSelected: {
+    color: COLORS.surface,
+  },
+  beveragePercentage: {
+    color: COLORS.muted,
+    fontSize: 10,
+    marginTop: 3,
+  },
   quickButton: {
     alignItems: "center",
     backgroundColor: COLORS.surface,
@@ -358,6 +735,94 @@ const styles = StyleSheet.create({
     color: COLORS.blueDark,
     fontSize: 13,
     fontWeight: "900",
+  },
+  quickBeverage: {
+    color: COLORS.muted,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  quickEquivalent: {
+    color: COLORS.blueDark,
+    fontSize: 9,
+    marginTop: 2,
+  },
+  customRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 13,
+  },
+  amountInput: {
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    color: COLORS.ink,
+    flex: 1,
+    fontSize: 15,
+    minHeight: 52,
+    paddingHorizontal: 16,
+  },
+  compactButton: {
+    alignItems: "center",
+    backgroundColor: COLORS.blueDark,
+    borderRadius: 16,
+    justifyContent: "center",
+    minHeight: 52,
+    paddingHorizontal: 18,
+  },
+  compactButtonLabel: {
+    color: COLORS.surface,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 18,
+  },
+  entryRow: {
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+    padding: 14,
+  },
+  entryAmount: {
+    color: COLORS.ink,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  entryTime: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  entryEquivalent: {
+    color: COLORS.blueDark,
+    fontSize: 11,
+    marginTop: 3,
+  },
+  entryActions: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  removeLink: {
+    color: "#A33A61",
+    fontSize: 13,
+    fontWeight: "800",
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+  emptyText: {
+    color: COLORS.muted,
+    fontSize: 13,
+    marginTop: 14,
   },
   status: {
     alignItems: "center",

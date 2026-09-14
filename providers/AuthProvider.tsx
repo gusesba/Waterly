@@ -13,7 +13,13 @@ import {
   type SessionTokens,
   syncOnboarding,
 } from "../services/api";
-import { clearSession, loadSession, saveSession } from "../services/sessionStorage";
+import {
+  clearSession,
+  loadCachedUser,
+  loadSession,
+  saveCachedUser,
+  saveSession,
+} from "../services/sessionStorage";
 import { useOnboarding } from "./OnboardingProvider";
 
 export type AuthMode = "login" | "register";
@@ -57,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const validSession = await ensureFreshSession(storedSession);
         const restored = await loadAndReconcileUser(validSession);
+        await saveCachedUser(restored.user);
 
         if (isMounted) {
           setSession(restored.session);
@@ -65,6 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         if (error instanceof ApiError && (error.status === 400 || error.status === 401)) {
           await clearSession();
+        } else {
+          const cachedUser = await loadCachedUser();
+          if (isMounted && cachedUser) {
+            setSession(storedSession);
+            setUser(cachedUser);
+          }
         }
       } finally {
         if (isMounted) {
@@ -103,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     setSession(authenticated.session);
     setUser(authenticated.user);
+    await saveCachedUser(authenticated.user);
   }
 
   async function logout() {
