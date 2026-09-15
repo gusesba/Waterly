@@ -176,6 +176,7 @@ export type LabelSet = {
     prestige: string;
     title: string;
   };
+  publicProfile: { bio: string; conflict: string; description: string; displayName: string; open: string; privacy: string; save: string; saveError: string; saving: string; title: string; username: string };
   habits: {
     continueToday: string;
     currentStreak: (days: number) => string;
@@ -382,6 +383,7 @@ export const labels: Record<AppLanguage, LabelSet> = {
       prestige: "Prestige",
       title: "Sua progressão",
     },
+    publicProfile: { bio: "Biografia", conflict: "Este nome de usuário já está em uso.", description: "Escolha como você aparecerá nas futuras áreas sociais do Waterly.", displayName: "Nome de exibição", open: "Meu perfil", privacy: "Idade, peso e altura continuam privados e nunca aparecem neste perfil.", save: "Salvar perfil", saveError: "Não foi possível salvar o perfil.", saving: "Salvando...", title: "Meu perfil", username: "Nome de usuário" },
     habits: {
       continueToday: "Complete sua meta hoje para continuar",
       currentStreak: (days) => `${days} ${days === 1 ? "dia seguido" : "dias seguidos"}`,
@@ -586,6 +588,7 @@ export const labels: Record<AppLanguage, LabelSet> = {
       prestige: "Prestige",
       title: "Your progression",
     },
+    publicProfile: { bio: "Bio", conflict: "This username is already in use.", description: "Choose how you will appear in Waterly's future social areas.", displayName: "Display name", open: "My profile", privacy: "Age, weight, and height remain private and never appear on this profile.", save: "Save profile", saveError: "We couldn't save the profile.", saving: "Saving...", title: "My profile", username: "Username" },
     habits: {
       continueToday: "Complete today's goal to keep it going",
       currentStreak: (days) => `${days} day${days === 1 ? "" : "s"} in a row`,
