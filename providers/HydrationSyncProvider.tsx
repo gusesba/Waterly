@@ -107,6 +107,7 @@ export function HydrationSyncProvider({ children }: { children: ReactNode }) {
           queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] }),
         queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] }),
         queryClient.invalidateQueries({ queryKey: ["habits", "streak"] }),
+        queryClient.invalidateQueries({ queryKey: ["habits", "achievements"] }),
         ]);
       } finally {
         setIsSyncing(false);

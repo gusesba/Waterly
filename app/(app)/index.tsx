@@ -225,6 +225,7 @@ export default function HomeRoute() {
       void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
       void queryClient.invalidateQueries({ queryKey: ["habits", "streak"] });
+      void queryClient.invalidateQueries({ queryKey: ["habits", "achievements"] });
     },
   });
   const changeEntry = useMutation<
@@ -317,6 +318,7 @@ export default function HomeRoute() {
       void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
       void queryClient.invalidateQueries({ queryKey: ["habits", "streak"] });
+      void queryClient.invalidateQueries({ queryKey: ["habits", "achievements"] });
       setAmountInput("");
       setEditingEntryId(null);
     },
@@ -500,7 +502,12 @@ export default function HomeRoute() {
             </View>
 
             {streakQuery.data && (
-              <View style={styles.streakCard}>
+              <Pressable
+                accessibilityLabel={copy.achievements.open}
+                accessibilityRole="button"
+                onPress={() => router.push("./achievements")}
+                style={({ pressed }) => [styles.streakCard, pressed && styles.pressed]}
+              >
                 <View style={styles.streakIcon}>
                   <Ionicons color="#E06A32" name="flame" size={22} />
                 </View>
@@ -519,7 +526,7 @@ export default function HomeRoute() {
                 <Text style={styles.streakLongest}>
                   {copy.habits.longestStreak(streakQuery.data.longest)}
                 </Text>
-              </View>
+              </Pressable>
             )}
 
             <Text style={styles.sectionLabel}>{copy.home.beverage}</Text>

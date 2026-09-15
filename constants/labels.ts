@@ -154,6 +154,17 @@ export type LabelSet = {
     title: string;
     unsupported: string;
   };
+  achievements: {
+    description: string;
+    empty: string;
+    items: Record<string, { description: string; title: string }>;
+    locked: string;
+    open: string;
+    progress: (current: number, requirement: number) => string;
+    title: string;
+    unlocked: string;
+    unlockedOn: (date: string) => string;
+  };
   habits: {
     continueToday: string;
     currentStreak: (days: number) => string;
@@ -334,6 +345,21 @@ export const labels: Record<AppLanguage, LabelSet> = {
       title: "Lembretes",
       unsupported: "Lembretes locais não estão disponíveis na versão web.",
     },
+    achievements: {
+      description: "Complete metas e mantenha sua sequência para desbloquear novos marcos.",
+      empty: "Nenhuma conquista disponível no momento.",
+      items: {
+        "first-goal": { description: "Conclua sua primeira meta diária.", title: "Primeira gota" },
+        "streak-3": { description: "Complete sua meta por 3 dias seguidos.", title: "Ritmo constante" },
+        "streak-7": { description: "Complete sua meta por 7 dias seguidos.", title: "Semana hidratada" },
+      },
+      locked: "Bloqueada",
+      open: "Ver conquistas",
+      progress: (current, requirement) => `${current} de ${requirement}`,
+      title: "Conquistas",
+      unlocked: "Conquistada",
+      unlockedOn: (date) => `Desbloqueada em ${date}`,
+    },
     habits: {
       continueToday: "Complete sua meta hoje para continuar",
       currentStreak: (days) => `${days} ${days === 1 ? "dia seguido" : "dias seguidos"}`,
@@ -511,6 +537,21 @@ export const labels: Record<AppLanguage, LabelSet> = {
       times: "TIMES",
       title: "Reminders",
       unsupported: "Local reminders are not available on the web version.",
+    },
+    achievements: {
+      description: "Complete goals and maintain your streak to unlock new milestones.",
+      empty: "No achievements are available right now.",
+      items: {
+        "first-goal": { description: "Complete your first daily goal.", title: "First drop" },
+        "streak-3": { description: "Complete your goal for 3 days in a row.", title: "Steady rhythm" },
+        "streak-7": { description: "Complete your goal for 7 days in a row.", title: "Hydrated week" },
+      },
+      locked: "Locked",
+      open: "View achievements",
+      progress: (current, requirement) => `${current} of ${requirement}`,
+      title: "Achievements",
+      unlocked: "Unlocked",
+      unlockedOn: (date) => `Unlocked on ${date}`,
     },
     habits: {
       continueToday: "Complete today's goal to keep it going",
