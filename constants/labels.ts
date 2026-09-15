@@ -154,6 +154,13 @@ export type LabelSet = {
     title: string;
     unsupported: string;
   };
+  habits: {
+    continueToday: string;
+    currentStreak: (days: number) => string;
+    longestStreak: (days: number) => string;
+    startToday: string;
+    todayCompleted: string;
+  };
   actions: {
     continue: string;
     calculate: string;
@@ -327,6 +334,13 @@ export const labels: Record<AppLanguage, LabelSet> = {
       title: "Lembretes",
       unsupported: "Lembretes locais não estão disponíveis na versão web.",
     },
+    habits: {
+      continueToday: "Complete sua meta hoje para continuar",
+      currentStreak: (days) => `${days} ${days === 1 ? "dia seguido" : "dias seguidos"}`,
+      longestStreak: (days) => `Recorde: ${days}`,
+      startToday: "Complete sua meta para iniciar uma sequência",
+      todayCompleted: "Meta de hoje concluída",
+    },
     actions: {
       continue: "Continuar",
       calculate: "Calcular minha meta",
@@ -497,6 +511,13 @@ export const labels: Record<AppLanguage, LabelSet> = {
       times: "TIMES",
       title: "Reminders",
       unsupported: "Local reminders are not available on the web version.",
+    },
+    habits: {
+      continueToday: "Complete today's goal to keep it going",
+      currentStreak: (days) => `${days} day${days === 1 ? "" : "s"} in a row`,
+      longestStreak: (days) => `Best: ${days}`,
+      startToday: "Complete your goal to start a streak",
+      todayCompleted: "Today's goal complete",
     },
     actions: {
       continue: "Continue",

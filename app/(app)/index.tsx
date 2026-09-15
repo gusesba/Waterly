@@ -37,6 +37,7 @@ import {
   type MascotMood,
 } from "../../services/hydrationFeedback";
 import { loadHydrationSnapshot, saveHydrationSnapshot } from "../../services/hydrationSnapshot";
+import type { Streak } from "../../services/habits";
 
 type AddEntryContext = {
   previous?: TodayHydration;
@@ -94,6 +95,11 @@ export default function HomeRoute() {
       `/api/v1/hydration/suggestions?beverageCode=${encodeURIComponent(selectedBeverage)}`,
     ),
     queryKey: ["hydration", "suggestions", user?.email, selectedBeverage],
+  });
+  const streakQuery = useQuery({
+    enabled: !!user,
+    queryFn: () => request<Streak>("/api/v1/habits/streak"),
+    queryKey: ["habits", "streak", user?.email],
   });
   useEffect(() => {
     if (!user) return;
@@ -218,6 +224,7 @@ export default function HomeRoute() {
       void queryClient.invalidateQueries({ queryKey: ["hydration", "history"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
+      void queryClient.invalidateQueries({ queryKey: ["habits", "streak"] });
     },
   });
   const changeEntry = useMutation<
@@ -309,6 +316,7 @@ export default function HomeRoute() {
       void queryClient.invalidateQueries({ queryKey: ["hydration", "history"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
+      void queryClient.invalidateQueries({ queryKey: ["habits", "streak"] });
       setAmountInput("");
       setEditingEntryId(null);
     },
@@ -490,6 +498,29 @@ export default function HomeRoute() {
                 </Text>
               )}
             </View>
+
+            {streakQuery.data && (
+              <View style={styles.streakCard}>
+                <View style={styles.streakIcon}>
+                  <Ionicons color="#E06A32" name="flame" size={22} />
+                </View>
+                <View style={styles.streakCopy}>
+                  <Text style={styles.streakValue}>
+                    {copy.habits.currentStreak(streakQuery.data.current)}
+                  </Text>
+                  <Text style={styles.streakStatus}>
+                    {streakQuery.data.todayCompleted
+                      ? copy.habits.todayCompleted
+                      : streakQuery.data.current > 0
+                        ? copy.habits.continueToday
+                        : copy.habits.startToday}
+                  </Text>
+                </View>
+                <Text style={styles.streakLongest}>
+                  {copy.habits.longestStreak(streakQuery.data.longest)}
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.sectionLabel}>{copy.home.beverage}</Text>
             <ScrollView
@@ -860,6 +891,28 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginTop: 8,
   },
+  streakCard: {
+    alignItems: "center",
+    backgroundColor: "#FFF5EC",
+    borderColor: "#F2D6BF",
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginTop: 14,
+    padding: 14,
+  },
+  streakIcon: {
+    alignItems: "center",
+    backgroundColor: "#FFE3CC",
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  streakCopy: { flex: 1, marginLeft: 12 },
+  streakValue: { color: COLORS.ink, fontSize: 15, fontWeight: "900" },
+  streakStatus: { color: COLORS.muted, fontSize: 12, marginTop: 3 },
+  streakLongest: { color: "#A54D25", fontSize: 11, fontWeight: "800", marginLeft: 8 },
   sectionLabel: {
     color: COLORS.ink,
     fontSize: 11,
