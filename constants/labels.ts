@@ -197,6 +197,12 @@ export type LabelSet = {
     emptyRequests: string; add: string; accept: string; decline: string; cancel: string; remove: string;
     pending: string; friend: string; confirmRemove: string; loadError: string; actionError: string;
   };
+  groups: {
+    tabToday:string; tabGroups:string; tabProfile:string; title:string; description:string; create:string; name:string; namePlaceholder:string;
+    groupDescription:string; descriptionPlaceholder:string; save:string; saving:string; empty:string; owner:string; member:string;
+    members:(count:number)=>string; addFriends:string; noFriends:string; remove:string; leave:string; delete:string; edit:string;
+    confirm:string; cancel:string; loadError:string; actionError:string; ownerCannotLeave:string;
+  };
   publicProfile: { bio: string; conflict: string; description: string; displayName: string; open: string; privacy: string; save: string; saveError: string; saving: string; title: string; username: string };
   habits: {
     continueToday: string;
@@ -422,6 +428,9 @@ export const labels: Record<AppLanguage, LabelSet> = {
     friends: {
       title:"Amigos",description:"Encontre pessoas pelo nome de usuário e hidrate-se em boa companhia.",open:"Amigos",search:"BUSCAR PESSOAS",searchPlaceholder:"nome_de_usuario",searchHint:"Digite pelo menos 3 caracteres.",friends:"SEUS AMIGOS",incoming:"SOLICITAÇÕES RECEBIDAS",outgoing:"SOLICITAÇÕES ENVIADAS",emptyFriends:"Você ainda não adicionou amigos.",emptyRequests:"Nenhuma solicitação por aqui.",add:"Adicionar",accept:"Aceitar",decline:"Recusar",cancel:"Cancelar",remove:"Remover",pending:"Pendente",friend:"Amigo",confirmRemove:"Toque novamente para confirmar",loadError:"Não foi possível carregar seus amigos.",actionError:"Não foi possível concluir esta ação.",
     },
+    groups: {
+      tabToday:"Hoje",tabGroups:"Grupos",tabProfile:"Perfil",title:"Grupos",description:"Espaços privados para construir hábitos com seus amigos.",create:"Criar grupo",name:"Nome do grupo",namePlaceholder:"Turma da hidratação",groupDescription:"Descrição",descriptionPlaceholder:"Qual é a missão deste grupo?",save:"Salvar",saving:"Salvando...",empty:"Você ainda não participa de nenhum grupo.",owner:"Proprietário",member:"Membro",members:(count)=>`${count} ${count===1?"membro":"membros"}`,addFriends:"ADICIONAR AMIGOS",noFriends:"Todos os seus amigos já estão neste grupo.",remove:"Remover",leave:"Sair do grupo",delete:"Excluir grupo",edit:"Editar grupo",confirm:"Confirmar",cancel:"Cancelar",loadError:"Não foi possível carregar os grupos.",actionError:"Não foi possível concluir esta ação.",ownerCannotLeave:"O proprietário precisa excluir o grupo para sair.",
+    },
     publicProfile: { bio: "Biografia", conflict: "Este nome de usuário já está em uso.", description: "Escolha como você aparecerá nas futuras áreas sociais do Waterly.", displayName: "Nome de exibição", open: "Meu perfil", privacy: "Idade, peso e altura continuam privados e nunca aparecem neste perfil.", save: "Salvar perfil", saveError: "Não foi possível salvar o perfil.", saving: "Salvando...", title: "Meu perfil", username: "Nome de usuário" },
     habits: {
       continueToday: "Complete sua meta hoje para continuar",
@@ -644,6 +653,9 @@ export const labels: Record<AppLanguage, LabelSet> = {
     },
     friends: {
       title:"Friends",description:"Find people by username and stay hydrated together.",open:"Friends",search:"FIND PEOPLE",searchPlaceholder:"username",searchHint:"Enter at least 3 characters.",friends:"YOUR FRIENDS",incoming:"RECEIVED REQUESTS",outgoing:"SENT REQUESTS",emptyFriends:"You haven't added any friends yet.",emptyRequests:"No requests here.",add:"Add",accept:"Accept",decline:"Decline",cancel:"Cancel",remove:"Remove",pending:"Pending",friend:"Friend",confirmRemove:"Tap again to confirm",loadError:"We couldn’t load your friends.",actionError:"We couldn’t complete this action.",
+    },
+    groups: {
+      tabToday:"Today",tabGroups:"Groups",tabProfile:"Profile",title:"Groups",description:"Private spaces to build habits with your friends.",create:"Create group",name:"Group name",namePlaceholder:"Hydration crew",groupDescription:"Description",descriptionPlaceholder:"What is this group's mission?",save:"Save",saving:"Saving...",empty:"You aren't in any groups yet.",owner:"Owner",member:"Member",members:(count)=>`${count} member${count===1?"":"s"}`,addFriends:"ADD FRIENDS",noFriends:"All your friends are already in this group.",remove:"Remove",leave:"Leave group",delete:"Delete group",edit:"Edit group",confirm:"Confirm",cancel:"Cancel",loadError:"We couldn’t load the groups.",actionError:"We couldn’t complete this action.",ownerCannotLeave:"The owner must delete the group to leave.",
     },
     publicProfile: { bio: "Bio", conflict: "This username is already in use.", description: "Choose how you will appear in Waterly's future social areas.", displayName: "Display name", open: "My profile", privacy: "Age, weight, and height remain private and never appear on this profile.", save: "Save profile", saveError: "We couldn't save the profile.", saving: "Saving...", title: "My profile", username: "Username" },
     habits: {
