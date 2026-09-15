@@ -127,6 +127,8 @@ export type LabelSet = {
     accountRequiredDescription: string;
     loading: string;
     loadError: string;
+    goalCelebration: string;
+    mascotState: Record<"complete" | "empty" | "progress", string>;
     addError: string;
     retry: string;
     signedInAs: (email: string) => string;
@@ -294,6 +296,12 @@ export const labels: Record<AppLanguage, LabelSet> = {
       accountRequiredDescription: "Crie uma conta para registrar e manter sua hidratação sincronizada.",
       loading: "Carregando sua hidratação...",
       loadError: "Não foi possível carregar sua hidratação.",
+      goalCelebration: "Meta concluída! Seu cuidado de hoje valeu cada copo.",
+      mascotState: {
+        complete: "Mascote comemorando a meta concluída",
+        empty: "Mascote descansando enquanto espera o primeiro registro",
+        progress: "Mascote acompanhando seu progresso",
+      },
       addError: "Não foi possível registrar este copo. Tente novamente.",
       retry: "Tentar novamente",
       signedInAs: (email) => `Conta: ${email}`,
@@ -459,6 +467,12 @@ export const labels: Record<AppLanguage, LabelSet> = {
       accountRequiredDescription: "Create an account to log and keep your hydration in sync.",
       loading: "Loading your hydration...",
       loadError: "We couldn’t load your hydration.",
+      goalCelebration: "Goal complete! Every glass counted today.",
+      mascotState: {
+        complete: "Mascot celebrating the completed goal",
+        empty: "Mascot resting while waiting for the first entry",
+        progress: "Mascot following your progress",
+      },
       addError: "We couldn’t log this glass. Please try again.",
       retry: "Try again",
       signedInAs: (email) => `Account: ${email}`,

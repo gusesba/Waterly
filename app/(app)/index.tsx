@@ -1,9 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  Animated,
+  type ImageSourcePropType,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,7 +17,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { COLORS } from "../../constants/theme";
 import { useAppLabels } from "../../hooks/useAppLabels";
@@ -26,10 +31,21 @@ import type {
   QuickAddSuggestion,
   TodayHydration,
 } from "../../services/hydration";
+import {
+  getMascotMood,
+  shouldCelebrateGoal,
+  type MascotMood,
+} from "../../services/hydrationFeedback";
 import { loadHydrationSnapshot, saveHydrationSnapshot } from "../../services/hydrationSnapshot";
 
 type AddEntryContext = {
   previous?: TodayHydration;
+};
+
+const mascotImages: Record<MascotMood, ImageSourcePropType> = {
+  complete: require("../../assets/images/mascote/mascote-04.png"),
+  empty: require("../../assets/images/mascote/mascote-16.png"),
+  progress: require("../../assets/images/mascote/mascote-02.png"),
 };
 
 export default function HomeRoute() {
@@ -51,6 +67,15 @@ export default function HomeRoute() {
   const [amountInput, setAmountInput] = useState("");
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [selectedBeverage, setSelectedBeverage] = useState("water");
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const [isReduceMotionEnabled, setIsReduceMotionEnabled] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const animatedProgress = useRef(new Animated.Value(0)).current;
+  const mascotEntrance = useRef(new Animated.Value(1)).current;
+  const celebratedDateRef = useRef<string | null>(null);
+  const celebrationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previousMascotMoodRef = useRef<MascotMood | null>(null);
+  const previousProgressRef = useRef<number | null>(null);
   const queryKey = ["hydration", "today", user?.email];
   const todayQuery = useQuery({
     enabled: !!user,
@@ -85,6 +110,65 @@ export default function HomeRoute() {
       void saveHydrationSnapshot(user.email, todayQuery.data);
     }
   }, [todayQuery.data, user]);
+
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setIsReduceMotionEnabled);
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setIsReduceMotionEnabled,
+    );
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    const id = animatedProgress.addListener(({ value }) => setDisplayProgress(value));
+    return () => animatedProgress.removeListener(id);
+  }, [animatedProgress]);
+
+  useEffect(() => {
+    const progress = todayQuery.data?.progress;
+    if (progress === undefined) return;
+
+    if (previousProgressRef.current === null || isReduceMotionEnabled) {
+      animatedProgress.setValue(progress);
+    } else {
+      Animated.timing(animatedProgress, {
+        duration: 380,
+        toValue: progress,
+        useNativeDriver: false,
+      }).start();
+    }
+    if (previousProgressRef.current === null && progress >= 1) {
+      celebratedDateRef.current = todayQuery.data?.date ?? null;
+    }
+    previousProgressRef.current = progress;
+  }, [animatedProgress, isReduceMotionEnabled, todayQuery.data?.date, todayQuery.data?.progress]);
+
+  useEffect(() => {
+    if (!todayQuery.data) return;
+    const mood = getMascotMood(
+      todayQuery.data.progress,
+      todayQuery.data.entries.length,
+    );
+    if (
+      previousMascotMoodRef.current !== null &&
+      previousMascotMoodRef.current !== mood &&
+      !isReduceMotionEnabled
+    ) {
+      mascotEntrance.setValue(0.82);
+      Animated.spring(mascotEntrance, {
+        damping: 9,
+        stiffness: 220,
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    }
+    previousMascotMoodRef.current = mood;
+  }, [isReduceMotionEnabled, mascotEntrance, todayQuery.data]);
+
+  useEffect(() => () => {
+    if (celebrationTimeoutRef.current) clearTimeout(celebrationTimeoutRef.current);
+  }, []);
   const addEntry = useMutation<TodayHydration, Error, AddEntryCommand, AddEntryContext>({
     mutationFn: (command: AddEntryCommand) => request<TodayHydration>(
       "/api/v1/hydration/entries",
@@ -96,6 +180,7 @@ export default function HomeRoute() {
     onError: async (error, command, context) => {
       if (isRetryable(error)) {
         await enqueue({ id: command.clientEntryId, payload: command, type: "create" });
+        acknowledgeAction("add", context?.previous);
         return;
       }
       if (context?.previous) {
@@ -127,8 +212,9 @@ export default function HomeRoute() {
 
       return { previous };
     },
-    onSuccess: (hydration) => {
+    onSuccess: (hydration, _command, context) => {
       queryClient.setQueryData(queryKey, hydration);
+      acknowledgeAction("add", context?.previous);
       void queryClient.invalidateQueries({ queryKey: ["hydration", "history"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
@@ -209,12 +295,17 @@ export default function HomeRoute() {
           : { entryId: operation.entryId, id: operation.id, type: "delete" });
         setAmountInput("");
         setEditingEntryId(null);
+        acknowledgeAction(operation.method === "DELETE" ? "delete" : "edit", context?.previous);
         return;
       }
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
     },
-    onSuccess: (nextHydration) => {
+    onSuccess: (nextHydration, operation, context) => {
       queryClient.setQueryData(queryKey, nextHydration);
+      acknowledgeAction(
+        operation.method === "DELETE" ? "delete" : "edit",
+        context?.previous,
+      );
       void queryClient.invalidateQueries({ queryKey: ["hydration", "history"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
@@ -222,6 +313,27 @@ export default function HomeRoute() {
       setEditingEntryId(null);
     },
   });
+
+  function acknowledgeAction(
+    action: "add" | "delete" | "edit",
+    previous?: TodayHydration,
+  ) {
+    const current = queryClient.getQueryData<TodayHydration>(queryKey);
+    if (current && shouldCelebrateGoal(
+      previous?.progress ?? previousProgressRef.current ?? current.progress,
+      current.progress,
+      current.date,
+      celebratedDateRef.current,
+    )) {
+      celebratedDateRef.current = current.date;
+      setShowCelebration(true);
+      void playHaptic("complete");
+      if (celebrationTimeoutRef.current) clearTimeout(celebrationTimeoutRef.current);
+      celebrationTimeoutRef.current = setTimeout(() => setShowCelebration(false), 2600);
+      return;
+    }
+    void playHaptic(action);
+  }
 
   function logWater(volumeMl: number, beverageCode = selectedBeverage) {
     addEntry.mutate({
@@ -291,7 +403,11 @@ export default function HomeRoute() {
   const selectedBeverageName = copy.home.beverageNames[selectedBeverage]
     ?? selectedBeverage;
   const progress = hydration?.progress ?? 0;
-  const progressWidth = `${Math.round(progress * 100)}%` as `${number}%`;
+  const progressWidth = animatedProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+  const mascotMood = getMascotMood(progress, hydration?.entries.length ?? 0);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -356,11 +472,23 @@ export default function HomeRoute() {
                 </View>
               </View>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: progressWidth }]} />
+                <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
               </View>
-              <Text style={styles.percentage}>
-                {Math.round(progress * 100).toLocaleString(language)}%
-              </Text>
+              <View style={styles.mascotRow}>
+                <Text style={styles.percentage}>
+                  {Math.round(displayProgress * 100).toLocaleString(language)}%
+                </Text>
+                <Animated.Image
+                  accessibilityLabel={copy.home.mascotState[mascotMood]}
+                  source={mascotImages[mascotMood]}
+                  style={[styles.mascot, { transform: [{ scale: mascotEntrance }] }]}
+                />
+              </View>
+              {showCelebration && (
+                <Text accessibilityLiveRegion="polite" style={styles.celebration}>
+                  {copy.home.goalCelebration}
+                </Text>
+              )}
             </View>
 
             <Text style={styles.sectionLabel}>{copy.home.beverage}</Text>
@@ -580,6 +708,19 @@ function isRetryable(error: Error) {
   return !(error instanceof ApiError) || error.status === 429 || error.status >= 500;
 }
 
+async function playHaptic(action: "add" | "complete" | "delete" | "edit") {
+  if (Platform.OS === "web") return;
+  if (action === "complete") {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  } else if (action === "delete") {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  } else if (action === "edit") {
+    await Haptics.selectionAsync();
+  } else {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: COLORS.background,
@@ -701,7 +842,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900",
     marginTop: 9,
-    textAlign: "right",
+  },
+  mascotRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  mascot: {
+    borderRadius: 30,
+    height: 60,
+    marginTop: 8,
+    width: 60,
+  },
+  celebration: {
+    color: COLORS.blueDark,
+    fontSize: 14,
+    fontWeight: "900",
+    marginTop: 8,
   },
   sectionLabel: {
     color: COLORS.ink,
