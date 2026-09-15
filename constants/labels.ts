@@ -191,6 +191,12 @@ export type LabelSet = {
     loadError: string;
     saveError: string;
   };
+  friends: {
+    title: string; description: string; open: string; search: string; searchPlaceholder: string;
+    searchHint: string; friends: string; incoming: string; outgoing: string; emptyFriends: string;
+    emptyRequests: string; add: string; accept: string; decline: string; cancel: string; remove: string;
+    pending: string; friend: string; confirmRemove: string; loadError: string; actionError: string;
+  };
   publicProfile: { bio: string; conflict: string; description: string; displayName: string; open: string; privacy: string; save: string; saveError: string; saving: string; title: string; username: string };
   habits: {
     continueToday: string;
@@ -413,6 +419,9 @@ export const labels: Record<AppLanguage, LabelSet> = {
       loadError: "Não foi possível carregar seu personagem.",
       saveError: "Não foi possível trocar a aura.",
     },
+    friends: {
+      title:"Amigos",description:"Encontre pessoas pelo nome de usuário e hidrate-se em boa companhia.",open:"Amigos",search:"BUSCAR PESSOAS",searchPlaceholder:"nome_de_usuario",searchHint:"Digite pelo menos 3 caracteres.",friends:"SEUS AMIGOS",incoming:"SOLICITAÇÕES RECEBIDAS",outgoing:"SOLICITAÇÕES ENVIADAS",emptyFriends:"Você ainda não adicionou amigos.",emptyRequests:"Nenhuma solicitação por aqui.",add:"Adicionar",accept:"Aceitar",decline:"Recusar",cancel:"Cancelar",remove:"Remover",pending:"Pendente",friend:"Amigo",confirmRemove:"Toque novamente para confirmar",loadError:"Não foi possível carregar seus amigos.",actionError:"Não foi possível concluir esta ação.",
+    },
     publicProfile: { bio: "Biografia", conflict: "Este nome de usuário já está em uso.", description: "Escolha como você aparecerá nas futuras áreas sociais do Waterly.", displayName: "Nome de exibição", open: "Meu perfil", privacy: "Idade, peso e altura continuam privados e nunca aparecem neste perfil.", save: "Salvar perfil", saveError: "Não foi possível salvar o perfil.", saving: "Salvando...", title: "Meu perfil", username: "Nome de usuário" },
     habits: {
       continueToday: "Complete sua meta hoje para continuar",
@@ -632,6 +641,9 @@ export const labels: Record<AppLanguage, LabelSet> = {
       noCost: "Auras are permanent achievement rewards and do not spend Drops or Prestige.",
       loadError: "We couldn’t load your character.",
       saveError: "We couldn’t change the aura.",
+    },
+    friends: {
+      title:"Friends",description:"Find people by username and stay hydrated together.",open:"Friends",search:"FIND PEOPLE",searchPlaceholder:"username",searchHint:"Enter at least 3 characters.",friends:"YOUR FRIENDS",incoming:"RECEIVED REQUESTS",outgoing:"SENT REQUESTS",emptyFriends:"You haven't added any friends yet.",emptyRequests:"No requests here.",add:"Add",accept:"Accept",decline:"Decline",cancel:"Cancel",remove:"Remove",pending:"Pending",friend:"Friend",confirmRemove:"Tap again to confirm",loadError:"We couldn’t load your friends.",actionError:"We couldn’t complete this action.",
     },
     publicProfile: { bio: "Bio", conflict: "This username is already in use.", description: "Choose how you will appear in Waterly's future social areas.", displayName: "Display name", open: "My profile", privacy: "Age, weight, and height remain private and never appear on this profile.", save: "Save profile", saveError: "We couldn't save the profile.", saving: "Saving...", title: "My profile", username: "Username" },
     habits: {
