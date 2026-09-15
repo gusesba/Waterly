@@ -7,7 +7,6 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Animated,
-  type ImageSourcePropType,
   Platform,
   Pressable,
   SafeAreaView,
@@ -20,6 +19,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { COLORS } from "../../constants/theme";
+import { Mascot } from "../../components/Mascot";
 import { useAppLabels } from "../../hooks/useAppLabels";
 import { useAuth } from "../../providers/AuthProvider";
 import { useHydrationSync } from "../../providers/HydrationSyncProvider";
@@ -38,15 +38,10 @@ import {
 } from "../../services/hydrationFeedback";
 import { loadHydrationSnapshot, saveHydrationSnapshot } from "../../services/hydrationSnapshot";
 import type { Streak } from "../../services/habits";
+import type { CharacterLoadout } from "../../services/cosmetics";
 
 type AddEntryContext = {
   previous?: TodayHydration;
-};
-
-const mascotImages: Record<MascotMood, ImageSourcePropType> = {
-  complete: require("../../assets/images/mascote/mascote-04.png"),
-  empty: require("../../assets/images/mascote/mascote-16.png"),
-  progress: require("../../assets/images/mascote/mascote-02.png"),
 };
 
 export default function HomeRoute() {
@@ -100,6 +95,11 @@ export default function HomeRoute() {
     enabled: !!user,
     queryFn: () => request<Streak>("/api/v1/habits/streak"),
     queryKey: ["habits", "streak", user?.email],
+  });
+  const loadoutQuery = useQuery({
+    enabled: !!user,
+    queryFn: () => request<CharacterLoadout>("/api/v1/profile/loadout"),
+    queryKey: ["cosmetics", "loadout", user?.email],
   });
   useEffect(() => {
     if (!user) return;
@@ -490,10 +490,12 @@ export default function HomeRoute() {
                 <Text style={styles.percentage}>
                   {Math.round(displayProgress * 100).toLocaleString(language)}%
                 </Text>
-                <Animated.Image
+                <Mascot
                   accessibilityLabel={copy.home.mascotState[mascotMood]}
-                  source={mascotImages[mascotMood]}
-                  style={[styles.mascot, { transform: [{ scale: mascotEntrance }] }]}
+                  auraCode={loadoutQuery.data?.auraCode}
+                  mood={mascotMood}
+                  scale={mascotEntrance}
+                  size={60}
                 />
               </View>
               {showCelebration && (

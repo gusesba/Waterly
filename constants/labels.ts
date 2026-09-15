@@ -176,6 +176,21 @@ export type LabelSet = {
     prestige: string;
     title: string;
   };
+  character: {
+    title: string;
+    description: string;
+    open: string;
+    preview: string;
+    axolotl: string;
+    auras: string;
+    auraNames: Record<"natural" | "ocean" | "sunset" | "stellar", string>;
+    equipped: string;
+    available: string;
+    unlockWith: (achievement: string) => string;
+    noCost: string;
+    loadError: string;
+    saveError: string;
+  };
   publicProfile: { bio: string; conflict: string; description: string; displayName: string; open: string; privacy: string; save: string; saveError: string; saving: string; title: string; username: string };
   habits: {
     continueToday: string;
@@ -383,6 +398,21 @@ export const labels: Record<AppLanguage, LabelSet> = {
       prestige: "Prestige",
       title: "Sua progressão",
     },
+    character: {
+      title: "Meu personagem",
+      description: "Escolha uma aura conquistada para acompanhar seu axolote pelo Waterly.",
+      open: "Personalizar personagem",
+      preview: "Prévia do seu axolote com a aura selecionada",
+      axolotl: "Axolote Waterly",
+      auras: "AURAS",
+      auraNames: { natural: "Natural", ocean: "Oceano", sunset: "Pôr do sol", stellar: "Estelar" },
+      equipped: "Em uso",
+      available: "Disponível para usar",
+      unlockWith: (achievement) => `Desbloqueie com: ${achievement}`,
+      noCost: "Auras são recompensas permanentes das suas conquistas e não gastam Drops ou Prestige.",
+      loadError: "Não foi possível carregar seu personagem.",
+      saveError: "Não foi possível trocar a aura.",
+    },
     publicProfile: { bio: "Biografia", conflict: "Este nome de usuário já está em uso.", description: "Escolha como você aparecerá nas futuras áreas sociais do Waterly.", displayName: "Nome de exibição", open: "Meu perfil", privacy: "Idade, peso e altura continuam privados e nunca aparecem neste perfil.", save: "Salvar perfil", saveError: "Não foi possível salvar o perfil.", saving: "Salvando...", title: "Meu perfil", username: "Nome de usuário" },
     habits: {
       continueToday: "Complete sua meta hoje para continuar",
@@ -587,6 +617,21 @@ export const labels: Record<AppLanguage, LabelSet> = {
       open: "View Drops and Prestige",
       prestige: "Prestige",
       title: "Your progression",
+    },
+    character: {
+      title: "My character",
+      description: "Choose an earned aura to follow your axolotl throughout Waterly.",
+      open: "Customize character",
+      preview: "Preview of your axolotl with the selected aura",
+      axolotl: "Waterly Axolotl",
+      auras: "AURAS",
+      auraNames: { natural: "Natural", ocean: "Ocean", sunset: "Sunset", stellar: "Stellar" },
+      equipped: "Equipped",
+      available: "Available to equip",
+      unlockWith: (achievement) => `Unlock with: ${achievement}`,
+      noCost: "Auras are permanent achievement rewards and do not spend Drops or Prestige.",
+      loadError: "We couldn’t load your character.",
+      saveError: "We couldn’t change the aura.",
     },
     publicProfile: { bio: "Bio", conflict: "This username is already in use.", description: "Choose how you will appear in Waterly's future social areas.", displayName: "Display name", open: "My profile", privacy: "Age, weight, and height remain private and never appear on this profile.", save: "Save profile", saveError: "We couldn't save the profile.", saving: "Saving...", title: "My profile", username: "Username" },
     habits: {
