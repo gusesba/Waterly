@@ -49,6 +49,7 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly details?: unknown,
+    public readonly retryAfterMs?: number,
   ) {
     super(`API request failed with status ${status}`);
   }
@@ -127,7 +128,7 @@ export async function apiRequest<T = void>(
     const body = await readBody(response);
 
     if (!response.ok) {
-      throw new ApiError(response.status, body);
+      throw new ApiError(response.status, body, parseRetryAfter(response.headers.get("Retry-After")));
     }
 
     return body as T;
@@ -162,4 +163,12 @@ function mapTokens(response: TokenResponse): SessionTokens {
 
 function createCorrelationId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function parseRetryAfter(value: string | null) {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(seconds * 1000, 0);
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? undefined : Math.max(date - Date.now(), 0);
 }

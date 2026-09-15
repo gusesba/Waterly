@@ -35,7 +35,17 @@ type AddEntryContext = {
 export default function HomeRoute() {
   const { copy, language } = useAppLabels();
   const { logout, request, user } = useAuth();
-  const { enqueue, isOnline, isSyncing, pendingCount, retry } = useHydrationSync();
+  const {
+    discardFailed,
+    enqueue,
+    failedCount,
+    failedEntryIds,
+    isOnline,
+    isSyncing,
+    pendingCount,
+    pendingEntryIds,
+    retry,
+  } = useHydrationSync();
   const queryClient = useQueryClient();
   const router = useRouter();
   const [amountInput, setAmountInput] = useState("");
@@ -290,19 +300,26 @@ export default function HomeRoute() {
         <Text style={styles.title}>{copy.home.title}</Text>
         <Text style={styles.description}>{copy.home.description}</Text>
 
-        {(!isOnline || pendingCount > 0 || isSyncing) && (
+        {(!isOnline || pendingCount > 0 || failedCount > 0 || isSyncing) && (
           <View style={styles.syncStatus}>
             <Text style={styles.syncText}>
               {!isOnline
                 ? copy.home.offline
+                : failedCount > 0
+                  ? copy.home.failedSync(failedCount)
                 : isSyncing
                   ? copy.home.syncing
                   : copy.home.pendingSync(pendingCount)}
             </Text>
-            {isOnline && pendingCount > 0 && !isSyncing && (
-              <Pressable accessibilityRole="button" onPress={() => void retry()}>
-                <Text style={styles.syncAction}>{copy.home.retrySync}</Text>
-              </Pressable>
+            {isOnline && failedCount > 0 && !isSyncing && (
+              <View>
+                <Pressable accessibilityRole="button" onPress={() => void retry()}>
+                  <Text style={styles.syncAction}>{copy.home.retrySync}</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => void discardFailed()}>
+                  <Text style={styles.syncAction}>{copy.home.discardFailed}</Text>
+                </Pressable>
+              </View>
             )}
           </View>
         )}
@@ -507,6 +524,11 @@ export default function HomeRoute() {
                       ))}
                     </Text>
                   )}
+                  {failedEntryIds.includes(entry.id) ? (
+                    <Text style={styles.entrySyncError}>{copy.home.entrySyncFailed}</Text>
+                  ) : pendingEntryIds.includes(entry.id) ? (
+                    <Text style={styles.entrySyncPending}>{copy.home.entrySyncPending}</Text>
+                  ) : null}
                 </View>
                 <View style={styles.entryActions}>
                   <Pressable
@@ -805,6 +827,16 @@ const styles = StyleSheet.create({
   },
   entryEquivalent: {
     color: COLORS.blueDark,
+    fontSize: 11,
+    marginTop: 3,
+  },
+  entrySyncError: {
+    color: "#A33A61",
+    fontSize: 11,
+    marginTop: 3,
+  },
+  entrySyncPending: {
+    color: COLORS.muted,
     fontSize: 11,
     marginTop: 3,
   },

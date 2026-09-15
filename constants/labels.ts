@@ -110,6 +110,10 @@ export type LabelSet = {
     noHistory: string;
     changeError: string;
     offline: string;
+    failedSync: (count: number) => string;
+    discardFailed: string;
+    entrySyncFailed: string;
+    entrySyncPending: string;
     pendingSync: (count: number) => string;
     syncing: string;
     retrySync: string;
@@ -247,6 +251,10 @@ export const labels: Record<AppLanguage, LabelSet> = {
       noHistory: "Ainda não há histórico disponível.",
       changeError: "Não foi possível alterar este registro.",
       offline: "Sem conexão",
+      failedSync: (count) => `${count} ${count === 1 ? "registro não sincronizou" : "registros não sincronizaram"}`,
+      discardFailed: "Descartar pendências com erro",
+      entrySyncFailed: "Não sincronizado",
+      entrySyncPending: "Aguardando sincronização",
       pendingSync: (count) => `${count} ${count === 1 ? "registro aguardando" : "registros aguardando"} sincronização`,
       syncing: "Sincronizando...",
       retrySync: "Tentar sincronizar",
@@ -387,6 +395,10 @@ export const labels: Record<AppLanguage, LabelSet> = {
       noHistory: "No history is available yet.",
       changeError: "We couldn’t change this entry.",
       offline: "Offline",
+      failedSync: (count) => `${count} ${count === 1 ? "entry failed" : "entries failed"} to sync`,
+      discardFailed: "Discard failed entries",
+      entrySyncFailed: "Not synced",
+      entrySyncPending: "Waiting to sync",
       pendingSync: (count) => `${count} ${count === 1 ? "entry" : "entries"} waiting to sync`,
       syncing: "Syncing...",
       retrySync: "Retry sync",
