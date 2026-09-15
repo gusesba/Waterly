@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack,usePathname,useRouter,useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
@@ -6,6 +6,7 @@ import { OnboardingProvider, useOnboarding } from "../providers/OnboardingProvid
 import { AuthProvider, useAuth } from "../providers/AuthProvider";
 import { QueryProvider } from "../providers/QueryProvider";
 import { HydrationSyncProvider } from "../providers/HydrationSyncProvider";
+import { PendingInviteProvider,usePendingInvite } from "../providers/PendingInviteProvider";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -14,9 +15,7 @@ export default function RootLayout() {
     <QueryProvider>
       <OnboardingProvider>
         <AuthProvider>
-          <HydrationSyncProvider>
-            <RootNavigator />
-          </HydrationSyncProvider>
+          <PendingInviteProvider><HydrationSyncProvider><RootNavigator /></HydrationSyncProvider></PendingInviteProvider>
         </AuthProvider>
       </OnboardingProvider>
     </QueryProvider>
@@ -30,7 +29,11 @@ function RootNavigator() {
     isHydrated: isOnboardingHydrated,
   } = useOnboarding();
   const { isHydrated: isAuthHydrated, user } = useAuth();
-  const isHydrated = isOnboardingHydrated && isAuthHydrated;
+  const { isHydrated: isInviteHydrated,token }=usePendingInvite();
+  const router=useRouter();const pathname=usePathname();const segments=useSegments();
+  const isHydrated = isOnboardingHydrated && isAuthHydrated && isInviteHydrated;
+
+  useEffect(()=>{if(!isHydrated||!hasCompletedOnboarding||!token)return;const invitePath=`/invite/group/${token}`;if(user&&pathname!==invitePath)router.replace(invitePath as never);else if(!user&&!pathname.startsWith("/invite/group")&&segments[0]!=="(auth)")router.replace(invitePath as never);},[hasCompletedOnboarding,isHydrated,pathname,router,segments,token,user]);
 
   useEffect(() => {
     if (isHydrated) {
@@ -48,12 +51,12 @@ function RootNavigator() {
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
       <Stack.Protected
-        guard={hasCompletedOnboarding && !hasCompletedAccountPrompt && !user}
+        guard={hasCompletedOnboarding && !user}
       >
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
       <Stack.Protected
-        guard={hasCompletedOnboarding && (hasCompletedAccountPrompt || !!user)}
+        guard={hasCompletedOnboarding && (hasCompletedAccountPrompt || !!user || !!token)}
       >
         <Stack.Screen name="(app)" />
       </Stack.Protected>
