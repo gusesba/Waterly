@@ -165,6 +165,17 @@ export type LabelSet = {
     unlocked: string;
     unlockedOn: (date: string) => string;
   };
+  progression: {
+    achievementReward: (achievement: string) => string;
+    description: string;
+    drops: string;
+    empty: string;
+    explanation: string;
+    history: string;
+    open: string;
+    prestige: string;
+    title: string;
+  };
   habits: {
     continueToday: string;
     currentStreak: (days: number) => string;
@@ -360,6 +371,17 @@ export const labels: Record<AppLanguage, LabelSet> = {
       unlocked: "Conquistada",
       unlockedOn: (date) => `Desbloqueada em ${date}`,
     },
+    progression: {
+      achievementReward: (achievement) => `Recompensa: ${achievement}`,
+      description: "Acompanhe as recompensas que você ganhou construindo seu hábito.",
+      drops: "Drops",
+      empty: "Suas primeiras recompensas aparecerão aqui.",
+      explanation: "Drops serão usados para itens e personalização. Prestige representa sua evolução real e não pode ser comprado.",
+      history: "Histórico recente",
+      open: "Ver Drops e Prestige",
+      prestige: "Prestige",
+      title: "Sua progressão",
+    },
     habits: {
       continueToday: "Complete sua meta hoje para continuar",
       currentStreak: (days) => `${days} ${days === 1 ? "dia seguido" : "dias seguidos"}`,
@@ -552,6 +574,17 @@ export const labels: Record<AppLanguage, LabelSet> = {
       title: "Achievements",
       unlocked: "Unlocked",
       unlockedOn: (date) => `Unlocked on ${date}`,
+    },
+    progression: {
+      achievementReward: (achievement) => `Reward: ${achievement}`,
+      description: "Track the rewards you earned while building your habit.",
+      drops: "Drops",
+      empty: "Your first rewards will appear here.",
+      explanation: "Drops will be used for items and customization. Prestige represents genuine progress and cannot be purchased.",
+      history: "Recent history",
+      open: "View Drops and Prestige",
+      prestige: "Prestige",
+      title: "Your progression",
     },
     habits: {
       continueToday: "Complete today's goal to keep it going",

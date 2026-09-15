@@ -226,6 +226,7 @@ export default function HomeRoute() {
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
       void queryClient.invalidateQueries({ queryKey: ["habits", "streak"] });
       void queryClient.invalidateQueries({ queryKey: ["habits", "achievements"] });
+      void queryClient.invalidateQueries({ queryKey: ["progression"] });
     },
   });
   const changeEntry = useMutation<
@@ -319,6 +320,7 @@ export default function HomeRoute() {
       void queryClient.invalidateQueries({ queryKey: ["hydration", "beverages"] });
       void queryClient.invalidateQueries({ queryKey: ["habits", "streak"] });
       void queryClient.invalidateQueries({ queryKey: ["habits", "achievements"] });
+      void queryClient.invalidateQueries({ queryKey: ["progression"] });
       setAmountInput("");
       setEditingEntryId(null);
     },

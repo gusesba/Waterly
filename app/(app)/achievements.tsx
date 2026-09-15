@@ -38,6 +38,14 @@ export default function AchievementsRoute() {
         </Pressable>
         <Text style={styles.title}>{copy.achievements.title}</Text>
         <Text style={styles.description}>{copy.achievements.description}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("./progression")}
+          style={({ pressed }) => [styles.progressionButton, pressed && styles.pressed]}
+        >
+          <Ionicons color={COLORS.surface} name="sparkles" size={18} />
+          <Text style={styles.progressionButtonText}>{copy.progression.open}</Text>
+        </Pressable>
 
         {achievementsQuery.isPending ? (
           <ActivityIndicator color={COLORS.blueDark} style={styles.loading} />
@@ -122,4 +130,7 @@ const styles = StyleSheet.create({
   track: { backgroundColor: COLORS.blueSoft, borderRadius: 4, height: 8, marginTop: 6, overflow: "hidden" },
   fill: { backgroundColor: "#E06A32", borderRadius: 4, height: "100%" },
   unlockedAt: { color: COLORS.success, fontSize: 11, fontWeight: "700", marginTop: 9 },
+  progressionButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: COLORS.blueDark, borderRadius: 14, flexDirection: "row", gap: 8, marginTop: 18, paddingHorizontal: 16, paddingVertical: 12 },
+  progressionButtonText: { color: COLORS.surface, fontSize: 13, fontWeight: "900" },
+  pressed: { opacity: 0.75 },
 });
