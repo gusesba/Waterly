@@ -131,6 +131,27 @@ export type LabelSet = {
     retry: string;
     signedInAs: (email: string) => string;
   };
+  reminders: {
+    channelName: string;
+    daily: string;
+    description: string;
+    disabled: string;
+    enabled: string;
+    invalidTime: string;
+    localNote: string;
+    notificationBody: string;
+    notificationTitle: string;
+    open: string;
+    openSettings: string;
+    permissionDenied: string;
+    save: string;
+    saveError: string;
+    saving: string;
+    timeLabel: (position: number) => string;
+    times: string;
+    title: string;
+    unsupported: string;
+  };
   actions: {
     continue: string;
     calculate: string;
@@ -277,6 +298,27 @@ export const labels: Record<AppLanguage, LabelSet> = {
       retry: "Tentar novamente",
       signedInAs: (email) => `Conta: ${email}`,
     },
+    reminders: {
+      channelName: "Lembretes de hidratação",
+      daily: "Lembretes diários",
+      description: "Escolha até três horários para receber um lembrete neste dispositivo.",
+      disabled: "Desativados",
+      enabled: "Ativados",
+      invalidTime: "Use horários válidos no formato HH:mm.",
+      localNote: "Os lembretes ficam salvos somente neste dispositivo e podem sofrer pequenos ajustes de horário pelo sistema.",
+      notificationBody: "Que tal registrar uma bebida e acompanhar sua meta de hoje?",
+      notificationTitle: "Hora de se hidratar",
+      open: "Lembretes",
+      openSettings: "Abrir configurações do dispositivo",
+      permissionDenied: "As notificações estão bloqueadas. Libere a permissão nas configurações do dispositivo.",
+      save: "Salvar horários",
+      saveError: "Não foi possível atualizar os lembretes.",
+      saving: "Salvando...",
+      timeLabel: (position) => `Horário do lembrete ${position}`,
+      times: "HORÁRIOS",
+      title: "Lembretes",
+      unsupported: "Lembretes locais não estão disponíveis na versão web.",
+    },
     actions: {
       continue: "Continuar",
       calculate: "Calcular minha meta",
@@ -420,6 +462,27 @@ export const labels: Record<AppLanguage, LabelSet> = {
       addError: "We couldn’t log this glass. Please try again.",
       retry: "Try again",
       signedInAs: (email) => `Account: ${email}`,
+    },
+    reminders: {
+      channelName: "Hydration reminders",
+      daily: "Daily reminders",
+      description: "Choose up to three times to receive a reminder on this device.",
+      disabled: "Disabled",
+      enabled: "Enabled",
+      invalidTime: "Use valid times in HH:mm format.",
+      localNote: "Reminders are stored only on this device and the system may make small timing adjustments.",
+      notificationBody: "How about logging a drink and checking today's goal?",
+      notificationTitle: "Time to hydrate",
+      open: "Reminders",
+      openSettings: "Open device settings",
+      permissionDenied: "Notifications are blocked. Allow them in your device settings.",
+      save: "Save times",
+      saveError: "We couldn’t update your reminders.",
+      saving: "Saving...",
+      timeLabel: (position) => `Reminder time ${position}`,
+      times: "TIMES",
+      title: "Reminders",
+      unsupported: "Local reminders are not available on the web version.",
     },
     actions: {
       continue: "Continue",

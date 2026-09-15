@@ -560,6 +560,9 @@ export default function HomeRoute() {
 
         <View style={styles.accountArea}>
           <Text style={styles.account}>{copy.home.signedInAs(user.email)}</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push("./reminders")}>
+            <Text style={styles.link}>{copy.reminders.open}</Text>
+          </Pressable>
           <Pressable accessibilityRole="button" onPress={() => void logout()}>
             <Text style={styles.link}>{copy.auth.logout}</Text>
           </Pressable>
